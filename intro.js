@@ -3,8 +3,7 @@
   if (!root.classList.contains("has-intro")) return;
   if (root.dataset.intro === "outline") return;
 
-  var LETTERS = "MECHANIZE";
-  var SYMBOLS = ["+", "-", "*", "/"];
+  var SHADE = " .:-~=+*#%@";
   var BUBBLE = {
     M: [
       "11111111",
@@ -147,39 +146,109 @@
     return { w: rect.width || px * 0.6, h: rect.height || px };
   }
 
-  function inGear(px, py, radius) {
-    var r = Math.hypot(px, py);
-    var ang = Math.atan2(py, px);
-    var frac = ((ang + Math.PI) / (Math.PI * 2)) * 8;
+  function gearRadius(ang) {
+    var frac = (ang / (Math.PI * 2)) * 8;
     frac = frac - Math.floor(frac);
-    var tooth = Math.abs(frac - 0.5) < 0.2;
-    var outer = tooth ? radius : radius * 0.7;
-    var inner = radius * 0.34;
-    return r <= outer && r >= inner;
+    var d = Math.abs(frac - 0.5);
+    if (d < 0.15) return 1;
+    if (d > 0.32) return 0.7;
+    return 0.7 + (1 - 0.7) * ((0.32 - d) / 0.17);
   }
 
-  function buildFilledGear(charW, charH, radius) {
-    var cells = [];
-    var cols = Math.ceil((radius * 2) / charW) + 1;
-    var rows = Math.ceil((radius * 2) / charH) + 1;
-    var cx = (cols - 1) / 2;
-    var cy = (rows - 1) / 2;
-    for (var y = 0; y < rows; y++) {
-      for (var x = 0; x < cols; x++) {
-        var px = (x - cx) * charW;
-        var py = (y - cy) * charH;
-        if (!inGear(px, py, radius)) continue;
-        var index = cells.length;
+  function buildGearSamples() {
+    var samples = [];
+    var step = 0.028;
+    var thick = 0.2;
+    var hole = 0.34;
+    for (var y = -1.02; y <= 1.02; y += step) {
+      for (var x = -1.02; x <= 1.02; x += step) {
+        var r = Math.hypot(x, y);
+        if (r < hole + 0.01 || r > 1.01) continue;
+        if (r > gearRadius(Math.atan2(y, x)) + 0.01) continue;
+        samples.push({ x: x, y: y, z: thick, nx: 0, ny: 0, nz: 1 });
+        samples.push({ x: x, y: y, z: -thick, nx: 0, ny: 0, nz: -1 });
+      }
+    }
+    for (var a = 0; a < Math.PI * 2; a += 0.03) {
+      var rad = gearRadius(a);
+      var c = Math.cos(a);
+      var s = Math.sin(a);
+      for (var z = -thick; z <= thick; z += 0.04) {
+        samples.push({ x: c * rad, y: s * rad, z: z, nx: c, ny: s, nz: 0 });
+        samples.push({ x: c * hole, y: s * hole, z: z, nx: -c, ny: -s, nz: 0 });
+      }
+    }
+    return samples;
+  }
+
+  function renderGear(samples, ax, ay, metrics, radius, capture) {
+    var cols = Math.ceil(window.innerWidth / metrics.w);
+    var rows = Math.ceil(window.innerHeight / metrics.h);
+    var zbuf = new Float32Array(cols * rows);
+    zbuf.fill(-99);
+    var chars = new Array(cols * rows);
+    for (var i = 0; i < chars.length; i++) chars[i] = " ";
+    var cosS = Math.cos(ax);
+    var sinS = Math.sin(ax);
+    var cosT = Math.cos(ay);
+    var sinT = Math.sin(ay);
+    var lx = 0.15;
+    var ly = -0.35;
+    var lz = 0.9;
+    var llen = Math.hypot(lx, ly, lz);
+    lx /= llen;
+    ly /= llen;
+    lz /= llen;
+    var midX = window.innerWidth / 2;
+    var midY = window.innerHeight / 2;
+    for (var s = 0; s < samples.length; s++) {
+      var p = samples[s];
+      var x1 = p.x * cosS - p.y * sinS;
+      var y1 = p.x * sinS + p.y * cosS;
+      var z1 = p.z;
+      var nx1 = p.nx * cosS - p.ny * sinS;
+      var ny1 = p.nx * sinS + p.ny * cosS;
+      var nz1 = p.nz;
+      var x2 = x1;
+      var y2 = y1 * cosT - z1 * sinT;
+      var z2 = y1 * sinT + z1 * cosT;
+      var nx2 = nx1;
+      var ny2 = ny1 * cosT - nz1 * sinT;
+      var nz2 = ny1 * sinT + nz1 * cosT;
+      if (nz2 <= 0.04) continue;
+      var persp = 4 / (4 - z2 * 0.15);
+      var px = midX + x2 * persp * radius;
+      var py = midY + y2 * persp * radius;
+      var sx = Math.floor(px / metrics.w);
+      var sy = Math.floor(py / metrics.h);
+      if (sx < 0 || sy < 0 || sx >= cols || sy >= rows) continue;
+      var idx = sy * cols + sx;
+      if (z2 <= zbuf[idx]) continue;
+      zbuf[idx] = z2;
+      var lum = nx2 * lx + ny2 * ly + nz2 * lz;
+      if (lum < 0) lum = 0;
+      var shade = Math.min(SHADE.length - 1, Math.floor(lum * (SHADE.length - 1) + 0.15));
+      chars[idx] = SHADE.charAt(shade);
+    }
+    var cells = null;
+    if (capture) {
+      cells = [];
+      for (var n = 0; n < chars.length; n++) {
+        if (chars[n] === " ") continue;
+        var sx = n % cols;
+        var sy = Math.floor(n / cols);
         cells.push({
-          x: px,
-          y: py,
-          angle: Math.atan2(py, px),
-          r: Math.hypot(px, py),
-          ch: index % 15 === 0 ? SYMBOLS[index % SYMBOLS.length] : LETTERS[index % LETTERS.length]
+          x: (sx + 0.5) * metrics.w,
+          y: (sy + 0.5) * metrics.h,
+          ch: chars[n]
         });
       }
     }
-    return cells;
+    var lines = new Array(rows);
+    for (var row = 0; row < rows; row++) {
+      lines[row] = chars.slice(row * cols, row * cols + cols).join("");
+    }
+    return { text: lines.join("\n"), cells: cells };
   }
 
   function buildWord(charW, charH) {
@@ -232,14 +301,6 @@
     return glyph;
   }
 
-  function pointOf(glyph) {
-    var rect = glyph._inner.getBoundingClientRect();
-    return {
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2
-    };
-  }
-
   function matchTargets(glyphs, targets) {
     var used = new Array(glyphs.length);
     targets.forEach(function (target) {
@@ -274,8 +335,8 @@
     if (cancelled) return;
 
     var fontSize = window.innerWidth < 520 ? 12 : 15;
-    var radius = Math.min(window.innerWidth * 0.36, window.innerHeight * 0.34);
-    radius = Math.max(124, Math.min(radius, 250));
+    var radius = Math.min(window.innerWidth * 0.34, window.innerHeight * 0.36);
+    radius = Math.max(118, Math.min(radius, 250));
     var metrics = measure(fontSize);
     var word = buildWord(metrics.w, metrics.h);
     var guard = 0;
@@ -285,76 +346,57 @@
       word = buildWord(metrics.w, metrics.h);
       guard++;
     }
-    var cells = buildFilledGear(metrics.w, metrics.h, radius);
+    function gearCells(rad, w, h) {
+      return (Math.PI * (rad * rad * 0.72 - Math.pow(rad * 0.34, 2))) / (w * h);
+    }
     guard = 0;
-    while (cells.length < word.points.length + 8 && fontSize > 8 && guard < 6) {
+    while (gearCells(radius, metrics.w, metrics.h) < word.points.length + 24 && fontSize > 8 && guard < 6) {
       fontSize -= 1;
       metrics = measure(fontSize);
       word = buildWord(metrics.w, metrics.h);
-      cells = buildFilledGear(metrics.w, metrics.h, radius);
       guard++;
     }
 
-    var originX = window.innerWidth / 2;
-    var originY = window.innerHeight / 2;
-    var glyphs = cells.map(function (cell) {
-      var glyph = makeGlyph(cell.ch, originX + cell.x, originY + cell.y, fontSize);
-      glyph._cell = cell;
-      glyph._keep = false;
-      return glyph;
-    });
+    var samples = buildGearSamples();
+    var view = document.createElement("pre");
+    view.className = "gear-view";
+    view.setAttribute("aria-hidden", "true");
+    view.style.fontSize = fontSize + "px";
+    view.style.lineHeight = metrics.h + "px";
+    stage.appendChild(view);
 
-    var sweep = glyphs.slice().sort(function (a, b) {
-      var aa = (a._cell.angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
-      var bb = (b._cell.angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
-      return aa - bb || a._cell.r - b._cell.r;
-    });
-
+    var spinMs = 1500;
     await new Promise(function (resolve) {
       var start = performance.now();
-      var duration = 680;
-      var cursor = 0;
       function frame(now) {
         if (cancelled) return resolve();
-        var count = Math.min(sweep.length, Math.floor(((now - start) / duration) * sweep.length) + 1);
-        while (cursor < count) {
-          var inner = sweep[cursor]._inner;
-          inner.style.transition = "opacity 70ms linear, transform 120ms ease-out";
-          inner.style.opacity = "1";
-          inner.style.transform = "translate(-50%, -50%) scale(1)";
-          cursor++;
-        }
-        if (cursor < sweep.length) requestAnimationFrame(frame);
+        var elapsed = now - start;
+        var t = Math.min(1, elapsed / spinMs);
+        var spin = t * Math.PI * 2;
+        var tilt = 0.42 + Math.sin(t * Math.PI * 2) * 0.1;
+        var drawn = renderGear(samples, spin, tilt, metrics, radius, false);
+        view.textContent = drawn.text;
+        if (t < 1) requestAnimationFrame(frame);
         else resolve();
       }
       requestAnimationFrame(frame);
     });
     if (cancelled) return;
 
-    await wait(80);
-    if (cancelled) return;
+    var last = renderGear(samples, Math.PI * 2, 0.42, metrics, radius, true);
+    view.textContent = last.text;
+    var cells = last.cells;
+    view.remove();
 
-    stage.style.transition = "transform 240ms cubic-bezier(.2,.75,.2,1)";
-    stage.style.transform = "rotate(12deg)";
-    await wait(250);
-    if (cancelled) return;
-    stage.style.transition = "transform 160ms cubic-bezier(.2,.8,.2,1)";
-    stage.style.transform = "rotate(7deg)";
-    await wait(180);
-    if (cancelled) return;
-
-    glyphs.forEach(function (glyph) {
-      var p = pointOf(glyph);
-      glyph._x = p.x;
-      glyph._y = p.y;
+    var originX = window.innerWidth / 2;
+    var originY = window.innerHeight / 2;
+    var glyphs = cells.map(function (cell) {
+      var glyph = makeGlyph(cell.ch, cell.x, cell.y, fontSize);
+      glyph._keep = false;
+      glyph._inner.style.opacity = "1";
+      glyph._inner.style.transform = "translate(-50%, -50%) scale(1)";
+      return glyph;
     });
-    stage.style.transition = "none";
-    stage.style.transform = "none";
-    glyphs.forEach(function (glyph) {
-      glyph.style.transition = "none";
-      glyph.style.transform = "translate(" + glyph._x + "px, " + glyph._y + "px)";
-    });
-    void stage.offsetWidth;
 
     var targets = word.points.map(function (point) {
       return {
@@ -385,7 +427,7 @@
 
     await wait(860 + 16 * 8 + 40);
     if (cancelled) return;
-    await wait(620);
+    await wait(440);
     if (cancelled) return;
 
     var kept = glyphs.filter(function (glyph) { return glyph._keep; });
@@ -400,12 +442,12 @@
       glyph._chunk = Math.min(2, Math.floor(index / chunkSize));
     });
 
-    var chunkStart = [0, 980, 1960];
+    var chunkStart = [0, 700, 1400];
     var longest = 0;
     kept.forEach(function (glyph) {
       var color = CHUNK_COLORS[glyph._chunk];
-      var delay = chunkStart[glyph._chunk] + Math.floor(Math.random() * 760);
-      var duration = 320;
+      var delay = chunkStart[glyph._chunk] + Math.floor(Math.random() * 500);
+      var duration = 260;
       if (delay + duration > longest) longest = delay + duration;
       glyph._inner.animate([
         { color: "#1c1c1c", opacity: 1, offset: 0 },

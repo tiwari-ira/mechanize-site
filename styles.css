@@ -358,6 +358,22 @@ html.intro-done .intro {
   font-variant-ligatures: none;
 }
 
+.gear-view {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+  font-family: var(--mono);
+  font-weight: 500;
+  letter-spacing: 0;
+  white-space: pre;
+  overflow: hidden;
+  font-variant-ligatures: none;
+}
+
 .glyph {
   position: absolute;
   top: 0;
