@@ -306,7 +306,7 @@
       glyphs[best]._keep = true;
       glyphs[best]._tx = target.x;
       glyphs[best]._ty = target.y;
-      glyphs[best]._inner.textContent = target.ch;
+      glyphs[best]._letter = target.ch;
     });
   }
 
@@ -357,8 +357,9 @@
         if (cancelled) return resolve();
         var elapsed = now - start;
         var t = Math.min(1, elapsed / spinMs);
-        var spin = t * Math.PI * 2;
-        var tilt = 0.42 + Math.sin(t * Math.PI * 2) * 0.1;
+        var eased = 1 - Math.pow(1 - t, 3);
+        var spin = eased * Math.PI * 2;
+        var tilt = 0.42 + Math.sin(eased * Math.PI * 2) * 0.08;
         var drawn = renderGear(samples, spin, tilt, metrics, radius, false);
         view.textContent = drawn.text;
         if (t < 1) requestAnimationFrame(frame);
@@ -383,7 +384,7 @@
       return glyph;
     });
     void stage.offsetWidth;
-    await wait(280);
+    await wait(160);
     if (cancelled) return;
 
     var targets = word.points.map(function (point) {
@@ -396,26 +397,26 @@
     matchTargets(glyphs, targets);
     void stage.offsetWidth;
 
-    var ease = "cubic-bezier(.2,.75,.2,1)";
+    var ease = "cubic-bezier(.45,0,.15,1)";
+    var travel = 1040;
     glyphs.forEach(function (glyph) {
       if (glyph._keep) {
-        var delay = Math.floor(Math.random() * 160);
-        glyph.style.transition = "transform 780ms " + ease + " " + delay + "ms";
+        glyph.style.transition = "transform " + travel + "ms " + ease;
         glyph.style.transform = "translate(" + glyph._tx + "px, " + glyph._ty + "px)";
         glyph._x = glyph._tx;
         glyph._y = glyph._ty;
+        var letter = glyph._letter;
+        var node = glyph._inner;
+        timers.push(setTimeout(function () {
+          if (!cancelled) node.textContent = letter;
+        }, 680));
       } else {
-        var dx = glyph._x - originX;
-        var dy = glyph._y - originY;
-        var len = Math.hypot(dx, dy) || 1;
-        var kick = 70 + Math.random() * 80;
-        glyph.style.transition = "transform 640ms ease, opacity 520ms ease";
+        glyph.style.transition = "opacity 620ms ease";
         glyph.style.opacity = "0";
-        glyph.style.transform = "translate(" + (glyph._x + (dx / len) * kick) + "px, " + (glyph._y + (dy / len) * kick) + "px)";
       }
     });
 
-    await wait(780 + 160 + 40);
+    await wait(travel + 30);
     if (cancelled) return;
     await wait(440);
     if (cancelled) return;
