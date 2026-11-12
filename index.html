@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mechanize, Inc.</title>
+  <meta name="description" content="Mechanize is a software company that builds RL environments and sells them to the leading AI labs.">
+  <meta name="theme-color" content="#f6f4ef">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    html.has-intro:not(.intro-done) .site { opacity: 0; }
+    html.has-intro, html.has-intro body { background: #f6f4ef; }
+  </style>
+  <script>
+    (function () {
+      try {
+        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var seen = sessionStorage.getItem("mechanize-intro") === "1";
+        if (!reduce && !seen) document.documentElement.classList.add("has-intro");
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div class="intro" id="intro">
+    <p class="sr-only">Mechanize</p>
+    <button type="button" class="skip" id="skip-intro"><span aria-hidden="true">&gt; </span>skip intro</button>
+    <div class="stage" id="stage" aria-hidden="true"></div>
+  </div>
+
+  <div class="site">
+    <main id="main">
+      <h2 id="mechanize-inc"><span class="chip" data-typewriter="Mechanize, Inc.">Mechanize, Inc.</span></h2>
+      <p>We build environments and evals for frontier coding agents. In these environments, models carry out software engineering work such as building a feature, deploying an application, or debugging an issue in an unfamiliar codebase. A grader scores the model’s performance, and these scores serve as signals during reinforcement learning and evaluations.</p>
+
+      <h3 id="careers"><span class="chip" data-reveal>Careers</span></h3>
+      <p>We’re hiring software engineers to design and build these environments. <a href="https://www.mechanize.work/apply/">Apply here</a>.</p>
+      <p>Learn how our <a href="https://www.mechanize.work/how-our-interview-process-works/">interview process</a> works, or read about <a href="https://www.mechanize.work/what-working-here-is-like/">what working here is like</a>.</p>
+
+      <hr>
+      <h3 id="our-work"><span class="chip" data-reveal>Our work</span></h3>
+      <h4 id="gba-eval" class="kicker"><span class="slash" aria-hidden="true">//</span> GBA Eval</h4>
+      <p>GBA Eval is a benchmark that measures how well coding agents can write a Game Boy Advance emulator from scratch in 24 hours. You can <a href="https://gbaeval.com/">view more here</a>.</p>
+
+      <div class="gba-videos" data-special-block="gba-videos" role="group" tabindex="0" aria-label="GBA Eval clips. Activate to play or pause.">
+        <figure>
+          <video data-kind="cand" src="https://videos.gbaeval.com/gpt-5-5/varooom-3d-gameplay.cand.mp4" autoplay muted loop playsinline></video>
+          <figcaption data-role="cand-label">GPT-5.5</figcaption>
+        </figure>
+        <figure class="gba-diff">
+          <video data-kind="diff" src="https://videos.gbaeval.com/gpt-5-5/varooom-3d-gameplay.diff.mp4" autoplay muted loop playsinline></video>
+          <figcaption>Diff</figcaption>
+        </figure>
+        <figure>
+          <video data-kind="ref" src="https://videos.gbaeval.com/gpt-5-5/varooom-3d-gameplay.ref.mp4" autoplay muted loop playsinline></video>
+          <figcaption>Reference</figcaption>
+        </figure>
+      </div>
+
+      <h4 id="essays"><span class="chip" data-reveal>Essays</span></h4>
+      <ul class="entries">
+        <li><a href="https://www.mechanize.work/blog/how-to-fully-automate-software-engineering"><em>How to fully automate software engineering</em></a></li>
+        <li><a href="https://www.mechanize.work/blog/the-upcoming-gpt-3-moment-for-rl"><em>The upcoming GPT-3 moment for RL</em></a></li>
+        <li><a href="https://www.mechanize.work/blog/sweatshop-data-is-over"><em>Sweatshop data is over</em></a></li>
+        <li><a href="https://www.mechanize.work/blog/medical-ai-isnt-the-bottleneck-to-medical-progress"><em>Medical AI isn’t the bottleneck to medical progress</em></a></li>
+        <li><a href="https://www.mechanize.work/blog/cheap-rl-tasks-will-waste-compute"><em>Cheap RL tasks will waste compute</em></a></li>
+        <li><a href="https://www.mechanize.work/blog/technological-determinism"><em>The future of AI is already written</em></a></li>
+        <li><a href="https://www.mechanize.work/blog/life-after-work"><em>Life after work</em></a></li>
+        <li><a href="https://www.mechanize.work/blog/unfalsifiable-stories-of-doom"><em>Unfalsifiable stories of doom</em></a></li>
+      </ul>
+
+      <h4 id="podcast"><span class="chip" data-reveal>Podcast</span></h4>
+      <ul class="entries">
+        <li><a href="https://www.mechanize.work/podcast/how-bad-data-teaches-models-to-write-terrible-code/"><em>How bad data teaches models to write terrible code</em></a></li>
+      </ul>
+
+      <hr>
+      <p>Company announcements are on our <a href="https://www.mechanize.work/press-releases/">press releases</a> page.</p>
+      <p>Mechanize is backed by <a class="person" href="https://nat.org/" target="_blank" rel="noopener noreferrer">Nat Friedman<span class="sr-only"> (opens in a new tab)</span></a> and <a class="person" href="https://dcgross.com/" target="_blank" rel="noopener noreferrer">Daniel Gross<span class="sr-only"> (opens in a new tab)</span></a>, <a class="person" href="https://patrickcollison.com/" target="_blank" rel="noopener noreferrer">Patrick Collison<span class="sr-only"> (opens in a new tab)</span></a>, <a class="person" href="https://en.wikipedia.org/wiki/Adam_D%27Angelo" target="_blank" rel="noopener noreferrer">Adam D’Angelo<span class="sr-only"> (opens in a new tab)</span></a>, <a class="person" href="https://www.mascobot.com/" target="_blank" rel="noopener noreferrer">Marco Mascorro<span class="sr-only"> (opens in a new tab)</span></a>, <a class="person" href="https://www.dwarkesh.com/" target="_blank" rel="noopener noreferrer">Dwarkesh Patel<span class="sr-only"> (opens in a new tab)</span></a>, <a class="person" href="https://sholtodouglas.github.io/" target="_blank" rel="noopener noreferrer">Sholto Douglas<span class="sr-only"> (opens in a new tab)</span></a>, <a class="person" href="https://devendrachaplot.github.io/" target="_blank" rel="noopener noreferrer">Devendra Chaplot<span class="sr-only"> (opens in a new tab)</span></a>, <a class="person" href="https://alexatallah.com/" target="_blank" rel="noopener noreferrer">Alex Atallah<span class="sr-only"> (opens in a new tab)</span></a>, and <a class="person" href="https://marcusabramovitch.substack.com/" target="_blank" rel="noopener noreferrer">Marcus Abramovitch<span class="sr-only"> (opens in a new tab)</span></a>.</p>
+      <p>For inquiries, you can reach us at our <a href="https://www.mechanize.work/contact.html">contact page</a>.</p>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <nav aria-label="Site">
+        <a href="/">Home</a> ·
+        <a href="https://www.mechanize.work/blog/">Essays</a> ·
+        <a href="https://www.mechanize.work/podcast/">Podcast</a> ·
+        <a href="https://www.mechanize.work/press-releases/">Press releases</a> ·
+        <a href="https://www.mechanize.work/apply/">Apply</a> ·
+        <a href="https://www.mechanize.work/how-our-interview-process-works/">Interview process</a> ·
+        <a href="https://www.mechanize.work/what-working-here-is-like/">Working here</a> ·
+        <a href="https://www.mechanize.work/contact.html">Contact</a>
+      </nav>
+    </footer>
+  </div>
+
+  <script src="/intro.js"></script>
+  <script src="/site.js"></script>
+</body>
+</html>
