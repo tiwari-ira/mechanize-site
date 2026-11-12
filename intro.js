@@ -7,88 +7,88 @@
   var SYMBOLS = ["+", "-", "*", "/"];
   var BUBBLE = {
     M: [
-      "11....11",
-      "111..111",
-      "11.11.11",
-      "11..1.11",
-      "11....11",
-      "11....11",
-      "11....11",
-      "11....11"
+      "11111111",
+      "11111111",
+      "11011011",
+      "11011011",
+      "11011011",
+      "11000011",
+      "11000011",
+      "11000011"
     ],
     E: [
       "11111111",
-      "11......",
-      "11......",
-      "1111111.",
-      "11......",
-      "11......",
-      "11......",
+      "11111111",
+      "11000000",
+      "11111110",
+      "11111110",
+      "11000000",
+      "11111111",
       "11111111"
     ],
     C: [
-      ".1111111",
-      "11......",
-      "11......",
-      "11......",
-      "11......",
-      "11......",
-      "11......",
-      ".1111111"
+      "01111111",
+      "11111111",
+      "11000000",
+      "11000000",
+      "11000000",
+      "11000000",
+      "11111111",
+      "01111111"
     ],
     H: [
-      "11....11",
-      "11....11",
-      "11....11",
+      "11000011",
+      "11000011",
+      "11000011",
       "11111111",
-      "11....11",
-      "11....11",
-      "11....11",
-      "11....11"
+      "11111111",
+      "11000011",
+      "11000011",
+      "11000011"
     ],
     A: [
-      ".111111.",
-      "11....11",
-      "11....11",
+      "01111110",
       "11111111",
-      "11....11",
-      "11....11",
-      "11....11",
-      "11....11"
+      "11000011",
+      "11111111",
+      "11111111",
+      "11000011",
+      "11000011",
+      "11000011"
     ],
     N: [
-      "11....11",
-      "111...11",
-      "11.1..11",
-      "11..1.11",
-      "11...111",
-      "11....11",
-      "11....11",
-      "11....11"
+      "11000011",
+      "11100011",
+      "11110011",
+      "11011011",
+      "11001111",
+      "11000111",
+      "11000011",
+      "11000011"
     ],
     I: [
       "11111111",
-      "...11...",
-      "...11...",
-      "...11...",
-      "...11...",
-      "...11...",
-      "...11...",
+      "11111111",
+      "00011000",
+      "00011000",
+      "00011000",
+      "00011000",
+      "11111111",
       "11111111"
     ],
     Z: [
       "11111111",
-      ".....111",
-      "....11..",
-      "...11...",
-      "..11....",
-      ".11.....",
-      "111.....",
+      "11111111",
+      "00000110",
+      "00001100",
+      "00011000",
+      "00110000",
+      "01100000",
       "11111111"
     ]
   };
   var WORD = "MECHANIZE";
-  var BATCHES = [[0, 1], [2, 3, 4], [5, 6], [7, 8]];
+  var CHUNK_COLORS = ["#c4512c", "#1f6f62", "#3c4f86"];
 
   var intro = document.getElementById("intro");
   var stage = document.getElementById("stage");
@@ -199,10 +199,6 @@
     var height = letters[0].rows.length * charH;
     var points = [];
     letters.forEach(function (letter) {
-      var batch = 0;
-      for (var b = 0; b < BATCHES.length; b++) {
-        if (BATCHES[b].indexOf(letter.index) !== -1) batch = b;
-      }
       for (var row = 0; row < letter.rows.length; row++) {
         var line = letter.rows[row];
         for (var col = 0; col < line.length; col++) {
@@ -210,8 +206,6 @@
           points.push({
             x: letter.x + (col + 0.5) * charW - width / 2,
             y: (row + 0.5) * charH - height / 2,
-            batch: batch,
-            letter: letter.index,
             ch: WORD.charAt(letter.index)
           });
         }
@@ -266,7 +260,6 @@
       glyphs[best]._keep = true;
       glyphs[best]._tx = target.x;
       glyphs[best]._ty = target.y;
-      glyphs[best]._batch = target.batch;
       glyphs[best]._inner.textContent = target.ch;
     });
   }
@@ -367,7 +360,6 @@
       return {
         x: originX + point.x,
         y: originY + point.y,
-        batch: point.batch,
         ch: point.ch
       };
     });
@@ -393,39 +385,37 @@
 
     await wait(860 + 16 * 8 + 40);
     if (cancelled) return;
-    await wait(340);
+    await wait(620);
     if (cancelled) return;
 
     var kept = glyphs.filter(function (glyph) { return glyph._keep; });
-    var batchStart = [0, 460, 920, 1380];
-    var longest = 0;
-    kept.forEach(function (glyph) {
-      var batch = glyph._batch || 0;
-      var jitter = (Math.round(glyph._x + glyph._y) % 5) * 32;
-      var delay = batchStart[batch] + jitter;
-      var duration = batch === 1 || batch === 2 ? 680 : 560;
-      if (delay + duration > longest) longest = delay + duration;
-      if (batch === 2) {
-        glyph._inner.animate([
-          { opacity: 1 },
-          { opacity: 0.15, offset: 0.3 },
-          { opacity: 0.85, offset: 0.5 },
-          { opacity: 0 }
-        ], { duration: duration, delay: delay, easing: "linear", fill: "forwards" });
-      } else if (batch === 1) {
-        glyph.animate([
-          { transform: "translate(" + glyph._x + "px, " + glyph._y + "px)", opacity: 1 },
-          { transform: "translate(" + glyph._x + "px, " + (glyph._y - 14) + "px)", opacity: 0 }
-        ], { duration: duration, delay: delay, easing: "cubic-bezier(.2,.7,.2,1)", fill: "forwards" });
-      } else {
-        glyph._inner.animate(
-          [{ opacity: 1 }, { opacity: 0 }],
-          { duration: duration, delay: delay, easing: "ease", fill: "forwards" }
-        );
-      }
+    for (var i = kept.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var swap = kept[i];
+      kept[i] = kept[j];
+      kept[j] = swap;
+    }
+    var chunkSize = Math.ceil(kept.length / 3) || 1;
+    kept.forEach(function (glyph, index) {
+      glyph._chunk = Math.min(2, Math.floor(index / chunkSize));
     });
 
-    await wait(Math.max(480, longest - 520));
+    var chunkStart = [0, 980, 1960];
+    var longest = 0;
+    kept.forEach(function (glyph) {
+      var color = CHUNK_COLORS[glyph._chunk];
+      var delay = chunkStart[glyph._chunk] + Math.floor(Math.random() * 760);
+      var duration = 320;
+      if (delay + duration > longest) longest = delay + duration;
+      glyph._inner.animate([
+        { color: "#1c1c1c", opacity: 1, offset: 0 },
+        { color: color, opacity: 1, offset: 0.28 },
+        { color: color, opacity: 1, offset: 0.5 },
+        { color: color, opacity: 0, offset: 1 }
+      ], { duration: duration, delay: delay, easing: "ease-out", fill: "forwards" });
+    });
+
+    await wait(Math.max(520, longest - 240));
     if (cancelled) return;
     finish();
   }
@@ -433,5 +423,5 @@
   run().catch(function () { finish(); });
   setTimeout(function () {
     if (!root.classList.contains("intro-done")) finish();
-  }, 9000);
+  }, 12000);
 })();
