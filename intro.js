@@ -1,11 +1,94 @@
 (function () {
   var root = document.documentElement;
   if (!root.classList.contains("has-intro")) return;
+  if (root.dataset.intro === "outline") return;
 
-  var WORD = "MECHANIZE";
   var LETTERS = "MECHANIZE";
-  var SYMBOLS = ["+", "+", "-", "*", "/", "."];
-  var TEETH = 8;
+  var SYMBOLS = ["+", "-", "*", "/"];
+  var BUBBLE = {
+    M: [
+      "11....11",
+      "111..111",
+      "11.11.11",
+      "11..1.11",
+      "11....11",
+      "11....11",
+      "11....11",
+      "11....11"
+    ],
+    E: [
+      "11111111",
+      "11......",
+      "11......",
+      "1111111.",
+      "11......",
+      "11......",
+      "11......",
+      "11111111"
+    ],
+    C: [
+      ".1111111",
+      "11......",
+      "11......",
+      "11......",
+      "11......",
+      "11......",
+      "11......",
+      ".1111111"
+    ],
+    H: [
+      "11....11",
+      "11....11",
+      "11....11",
+      "11111111",
+      "11....11",
+      "11....11",
+      "11....11",
+      "11....11"
+    ],
+    A: [
+      ".111111.",
+      "11....11",
+      "11....11",
+      "11111111",
+      "11....11",
+      "11....11",
+      "11....11",
+      "11....11"
+    ],
+    N: [
+      "11....11",
+      "111...11",
+      "11.1..11",
+      "11..1.11",
+      "11...111",
+      "11....11",
+      "11....11",
+      "11....11"
+    ],
+    I: [
+      "11111111",
+      "...11...",
+      "...11...",
+      "...11...",
+      "...11...",
+      "...11...",
+      "...11...",
+      "11111111"
+    ],
+    Z: [
+      "11111111",
+      ".....111",
+      "....11..",
+      "...11...",
+      "..11....",
+      ".11.....",
+      "111.....",
+      "11111111"
+    ]
+  };
+  var WORD = "MECHANIZE";
+  var BATCHES = [[0, 1], [2, 3, 4], [5, 6], [7, 8]];
 
   var intro = document.getElementById("intro");
   var stage = document.getElementById("stage");
@@ -29,7 +112,7 @@
 
   function finish() {
     if (root.classList.contains("intro-done")) return;
-    try { sessionStorage.setItem("mechanize-intro", "1"); } catch (e) {}
+    try { sessionStorage.setItem("mechanize-intro-filled", "1"); } catch (e) {}
     root.classList.add("intro-done");
     window.dispatchEvent(new Event("mechanize:ready"));
     setTimeout(function () {
@@ -64,115 +147,77 @@
     return { w: rect.width || px * 0.6, h: rect.height || px };
   }
 
-  function buildGear(charW, charH, radius) {
-    var points = [];
-    function add(x, y, tip) {
-      for (var i = 0; i < points.length; i++) {
-        var dx = (x - points[i].x) / charW;
-        var dy = (y - points[i].y) / charH;
-        if (dx * dx + dy * dy < 1.2) return;
-      }
-      points.push({ x: x, y: y, tip: !!tip });
-    }
-    function ring(r) {
-      var a = -Math.PI / 2;
-      var guard = 0;
-      while (a < Math.PI * 1.5 - 0.08 && guard < 500) {
-        add(Math.cos(a) * r, Math.sin(a) * r, false);
-        var tx = -Math.sin(a);
-        var ty = Math.cos(a);
-        var spacing = Math.abs(tx) * charW * 1.52 + Math.abs(ty) * charH * 1.14;
-        a += Math.max(spacing, 8) / r;
-        guard++;
-      }
-    }
-    function line(x0, y0, x1, y1, tip) {
-      var dx = x1 - x0;
-      var dy = y1 - y0;
-      var dist = Math.hypot(dx, dy) || 1;
-      var ux = dx / dist;
-      var uy = dy / dist;
-      var spacing = Math.abs(ux) * charW * 1.45 + Math.abs(uy) * charH * 1.12;
-      var steps = Math.max(1, Math.round(dist / spacing));
-      for (var s = 0; s <= steps; s++) {
-        var t = s / steps;
-        add(x0 + dx * t, y0 + dy * t, tip && s === steps);
-      }
-    }
-
-    ring(radius * 0.4);
-    ring(radius * 0.72);
-
-    var toothArc = (Math.PI * 2 / TEETH) * 0.17;
-    for (var t = 0; t < TEETH; t++) {
-      var a0 = -Math.PI / 2 + (t / TEETH) * Math.PI * 2;
-      var left = a0 - toothArc;
-      var right = a0 + toothArc;
-      var root = radius * 0.73;
-      var tip = radius;
-      line(Math.cos(left) * root, Math.sin(left) * root, Math.cos(left) * tip, Math.sin(left) * tip, true);
-      line(Math.cos(right) * root, Math.sin(right) * root, Math.cos(right) * tip, Math.sin(right) * tip, false);
-      line(Math.cos(left) * tip, Math.sin(left) * tip, Math.cos(right) * tip, Math.sin(right) * tip, false);
-    }
-
-    return points.map(function (p) {
-      return {
-        x: p.x,
-        y: p.y,
-        tip: p.tip,
-        angle: Math.atan2(p.y, p.x),
-        r: Math.hypot(p.x, p.y)
-      };
-    });
+  function inGear(px, py, radius) {
+    var r = Math.hypot(px, py);
+    var ang = Math.atan2(py, px);
+    var frac = ((ang + Math.PI) / (Math.PI * 2)) * 8;
+    frac = frac - Math.floor(frac);
+    var tooth = Math.abs(frac - 0.5) < 0.2;
+    var outer = tooth ? radius : radius * 0.7;
+    var inner = radius * 0.34;
+    return r <= outer && r >= inner;
   }
 
-  function assignCharacters(cells, cx, cy) {
-    cells.forEach(function (cell, index) {
-      cell.ch = LETTERS[index % LETTERS.length];
-      cell.angle = Math.atan2(cell.y - cy, cell.x - cx);
-      cell.r = Math.hypot(cell.x - cx, cell.y - cy);
-      cell.keep = false;
-    });
-
-    var used = new Set();
-    var picks = [];
-    for (var i = 0; i < WORD.length; i++) {
-      var letter = WORD[i];
-      var candidates = cells.filter(function (cell) {
-        return cell.ch === letter && !used.has(cell);
-      });
-      if (!candidates.length) {
-        candidates = cells.filter(function (cell) { return !used.has(cell); });
-      }
-      var best = candidates[0];
-      var bestScore = -Infinity;
-      candidates.forEach(function (cell) {
-        var sep = Math.PI;
-        picks.forEach(function (pick) {
-          var d = Math.abs(cell.angle - pick.angle);
-          if (d > Math.PI) d = Math.PI * 2 - d;
-          sep = Math.min(sep, d);
+  function buildFilledGear(charW, charH, radius) {
+    var cells = [];
+    var cols = Math.ceil((radius * 2) / charW) + 1;
+    var rows = Math.ceil((radius * 2) / charH) + 1;
+    var cx = (cols - 1) / 2;
+    var cy = (rows - 1) / 2;
+    for (var y = 0; y < rows; y++) {
+      for (var x = 0; x < cols; x++) {
+        var px = (x - cx) * charW;
+        var py = (y - cy) * charH;
+        if (!inGear(px, py, radius)) continue;
+        var index = cells.length;
+        cells.push({
+          x: px,
+          y: py,
+          angle: Math.atan2(py, px),
+          r: Math.hypot(px, py),
+          ch: index % 15 === 0 ? SYMBOLS[index % SYMBOLS.length] : LETTERS[index % LETTERS.length]
         });
-        var score = (picks.length ? sep : 0) + cell.r * 0.05;
-        if (score > bestScore) {
-          bestScore = score;
-          best = cell;
-        }
-      });
-      best.ch = letter;
-      best.keep = true;
-      best.wordIndex = i;
-      used.add(best);
-      picks.push(best);
+      }
     }
+    return cells;
+  }
 
-    cells.forEach(function (cell, index) {
-      if (cell.keep) return;
-      if (cell.tip) cell.ch = "+";
-      else if ((index * 5) % 17 === 0) cell.ch = SYMBOLS[index % SYMBOLS.length];
+  function buildWord(charW, charH) {
+    var letterW = 8 * charW;
+    var maxW = window.innerWidth * 0.9;
+    var gap = (maxW - WORD.length * letterW) / (WORD.length - 1);
+    gap = Math.max(charW * 0.65, Math.min(gap, charW * 2.1));
+    var letters = [];
+    var width = 0;
+    for (var i = 0; i < WORD.length; i++) {
+      var rows = BUBBLE[WORD[i]];
+      var letterW = rows[0].length * charW;
+      letters.push({ rows: rows, x: width, index: i });
+      width += letterW;
+      if (i < WORD.length - 1) width += gap;
+    }
+    var height = letters[0].rows.length * charH;
+    var points = [];
+    letters.forEach(function (letter) {
+      var batch = 0;
+      for (var b = 0; b < BATCHES.length; b++) {
+        if (BATCHES[b].indexOf(letter.index) !== -1) batch = b;
+      }
+      for (var row = 0; row < letter.rows.length; row++) {
+        var line = letter.rows[row];
+        for (var col = 0; col < line.length; col++) {
+          if (line.charAt(col) !== "1") continue;
+          points.push({
+            x: letter.x + (col + 0.5) * charW - width / 2,
+            y: (row + 0.5) * charH - height / 2,
+            batch: batch,
+            letter: letter.index,
+            ch: WORD.charAt(letter.index)
+          });
+        }
+      }
     });
-
-    return picks;
+    return { points: points, width: width, height: height };
   }
 
   function makeGlyph(ch, x, y, size) {
@@ -201,6 +246,31 @@
     };
   }
 
+  function matchTargets(glyphs, targets) {
+    var used = new Array(glyphs.length);
+    targets.forEach(function (target) {
+      var best = -1;
+      var bestD = Infinity;
+      for (var i = 0; i < glyphs.length; i++) {
+        if (used[i]) continue;
+        var dx = glyphs[i]._x - target.x;
+        var dy = glyphs[i]._y - target.y;
+        var d = dx * dx + dy * dy;
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+      if (best < 0) return;
+      used[best] = true;
+      glyphs[best]._keep = true;
+      glyphs[best]._tx = target.x;
+      glyphs[best]._ty = target.y;
+      glyphs[best]._batch = target.batch;
+      glyphs[best]._inner.textContent = target.ch;
+    });
+  }
+
   async function run() {
     if (document.fonts && document.fonts.load) {
       await Promise.race([
@@ -210,42 +280,53 @@
     }
     if (cancelled) return;
 
-    var radius = Math.min(window.innerWidth * 0.33, window.innerHeight * 0.34);
-    radius = Math.max(118, Math.min(radius, 240));
-    var fontSize = Math.max(11, Math.min(16, radius / 15));
-    if (window.innerWidth < 520) fontSize = Math.max(10, Math.min(13, radius / 14));
+    var fontSize = window.innerWidth < 520 ? 12 : 15;
+    var radius = Math.min(window.innerWidth * 0.36, window.innerHeight * 0.34);
+    radius = Math.max(124, Math.min(radius, 250));
     var metrics = measure(fontSize);
-    var cells = buildGear(metrics.w, metrics.h, radius);
-    var picks = assignCharacters(cells, 0, 0);
+    var word = buildWord(metrics.w, metrics.h);
+    var guard = 0;
+    while ((word.width > window.innerWidth * 0.9 || word.height > window.innerHeight * 0.52) && fontSize > 8 && guard < 10) {
+      fontSize *= 0.9;
+      metrics = measure(fontSize);
+      word = buildWord(metrics.w, metrics.h);
+      guard++;
+    }
+    var cells = buildFilledGear(metrics.w, metrics.h, radius);
+    guard = 0;
+    while (cells.length < word.points.length + 8 && fontSize > 8 && guard < 6) {
+      fontSize -= 1;
+      metrics = measure(fontSize);
+      word = buildWord(metrics.w, metrics.h);
+      cells = buildFilledGear(metrics.w, metrics.h, radius);
+      guard++;
+    }
 
     var originX = window.innerWidth / 2;
     var originY = window.innerHeight / 2;
     var glyphs = cells.map(function (cell) {
-      var x = originX + cell.x;
-      var y = originY + cell.y;
-      var glyph = makeGlyph(cell.ch, x, y, fontSize);
-      glyph._keep = cell.keep;
-      glyph._wordIndex = cell.wordIndex;
+      var glyph = makeGlyph(cell.ch, originX + cell.x, originY + cell.y, fontSize);
       glyph._cell = cell;
+      glyph._keep = false;
       return glyph;
     });
 
     var sweep = glyphs.slice().sort(function (a, b) {
       var aa = (a._cell.angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
       var bb = (b._cell.angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
-      return aa - bb || b._cell.r - a._cell.r;
+      return aa - bb || a._cell.r - b._cell.r;
     });
 
     await new Promise(function (resolve) {
       var start = performance.now();
-      var duration = 620;
+      var duration = 680;
       var cursor = 0;
       function frame(now) {
         if (cancelled) return resolve();
-        var count = Math.min(sweep.length, Math.floor(((now - start) / duration) * sweep.length));
+        var count = Math.min(sweep.length, Math.floor(((now - start) / duration) * sweep.length) + 1);
         while (cursor < count) {
           var inner = sweep[cursor]._inner;
-          inner.style.transition = "opacity 90ms linear, transform 150ms ease-out";
+          inner.style.transition = "opacity 70ms linear, transform 120ms ease-out";
           inner.style.opacity = "1";
           inner.style.transform = "translate(-50%, -50%) scale(1)";
           cursor++;
@@ -257,118 +338,94 @@
     });
     if (cancelled) return;
 
-    await wait(90);
+    await wait(80);
     if (cancelled) return;
 
     stage.style.transition = "transform 240ms cubic-bezier(.2,.75,.2,1)";
-    stage.style.transform = "rotate(14deg)";
+    stage.style.transform = "rotate(12deg)";
     await wait(250);
     if (cancelled) return;
-    stage.style.transition = "transform 170ms cubic-bezier(.2,.8,.2,1)";
-    stage.style.transform = "rotate(8deg)";
-    await wait(190);
+    stage.style.transition = "transform 160ms cubic-bezier(.2,.8,.2,1)";
+    stage.style.transform = "rotate(7deg)";
+    await wait(180);
     if (cancelled) return;
 
-    var spots = glyphs.map(function (glyph) {
+    glyphs.forEach(function (glyph) {
       var p = pointOf(glyph);
-      return { glyph: glyph, x: p.x, y: p.y };
+      glyph._x = p.x;
+      glyph._y = p.y;
     });
     stage.style.transition = "none";
     stage.style.transform = "none";
-    spots.forEach(function (spot) {
-      spot.glyph.style.transition = "none";
-      spot.glyph.style.transform = "translate(" + spot.x + "px, " + spot.y + "px)";
-      spot.glyph._x = spot.x;
-      spot.glyph._y = spot.y;
+    glyphs.forEach(function (glyph) {
+      glyph.style.transition = "none";
+      glyph.style.transform = "translate(" + glyph._x + "px, " + glyph._y + "px)";
     });
     void stage.offsetWidth;
 
-    var wordSize = Math.min(72, Math.max(34, window.innerWidth * 0.068));
-    var wordMetrics = measure(wordSize);
-    var tracking = wordSize * 0.14;
-    var advance = wordMetrics.w + tracking;
-    var total = advance * WORD.length - tracking;
-    if (total > window.innerWidth * 0.9) {
-      var scale = (window.innerWidth * 0.9) / total;
-      wordSize *= scale;
-      wordMetrics = measure(wordSize);
-      tracking = wordSize * 0.14;
-      advance = wordMetrics.w + tracking;
-      total = advance * WORD.length - tracking;
-    }
-    var wordX = (window.innerWidth - total) / 2 + wordMetrics.w / 2;
-    var wordY = window.innerHeight / 2;
-    var ease = "cubic-bezier(.22,.8,.24,1)";
+    var targets = word.points.map(function (point) {
+      return {
+        x: originX + point.x,
+        y: originY + point.y,
+        batch: point.batch,
+        ch: point.ch
+      };
+    });
+    matchTargets(glyphs, targets);
 
-    glyphs.forEach(function (glyph) {
+    var ease = "cubic-bezier(.22,.8,.24,1)";
+    glyphs.forEach(function (glyph, index) {
       if (glyph._keep) {
-        var delay = glyph._wordIndex * 34;
-        var x = wordX + glyph._wordIndex * advance;
-        glyph.style.transition = "transform 840ms " + ease + " " + delay + "ms";
-        glyph._inner.style.transition = "font-size 840ms " + ease + " " + delay + "ms";
-        glyph.style.transform = "translate(" + x + "px, " + wordY + "px)";
-        glyph._inner.style.fontSize = wordSize + "px";
-        glyph._x = x;
-        glyph._y = wordY;
+        var delay = (index % 9) * 16;
+        glyph.style.transition = "transform 860ms " + ease + " " + delay + "ms";
+        glyph.style.transform = "translate(" + glyph._tx + "px, " + glyph._ty + "px)";
+        glyph._x = glyph._tx;
+        glyph._y = glyph._ty;
       } else {
         var dx = glyph._x - originX;
         var dy = glyph._y - originY;
         var len = Math.hypot(dx, dy) || 1;
-        var drift = 16;
-        glyph.style.transition = "transform 560ms ease, opacity 420ms ease";
+        glyph.style.transition = "transform 520ms ease, opacity 420ms ease";
         glyph.style.opacity = "0";
-        glyph.style.transform = "translate(" + (glyph._x + (dx / len) * drift) + "px, " + (glyph._y + (dy / len) * drift) + "px)";
+        glyph.style.transform = "translate(" + (glyph._x + (dx / len) * 22) + "px, " + (glyph._y + (dy / len) * 22) + "px)";
       }
     });
 
-    await wait(840 + 34 * (WORD.length - 1) + 40);
+    await wait(860 + 16 * 8 + 40);
     if (cancelled) return;
-    await wait(380);
+    await wait(340);
     if (cancelled) return;
 
-    var exits = [
-      { kind: "fade", delay: 0, duration: 260 },
-      { kind: "flicker", delay: 90, duration: 420 },
-      { kind: "rise", delay: 40, duration: 480 },
-      { kind: "slow", delay: 150, duration: 620 },
-      { kind: "flicker", delay: 70, duration: 380 },
-      { kind: "rise", delay: 20, duration: 440 },
-      { kind: "fade", delay: 180, duration: 240 },
-      { kind: "rise", delay: 110, duration: 560 },
-      { kind: "slow", delay: 60, duration: 520 }
-    ];
-
-    picks.sort(function (a, b) { return a.wordIndex - b.wordIndex; });
-    var wordGlyphs = glyphs.filter(function (glyph) { return glyph._keep; })
-      .sort(function (a, b) { return a._wordIndex - b._wordIndex; });
-
+    var kept = glyphs.filter(function (glyph) { return glyph._keep; });
+    var batchStart = [0, 460, 920, 1380];
     var longest = 0;
-    wordGlyphs.forEach(function (glyph, index) {
-      var exit = exits[index];
-      var end = exit.delay + exit.duration;
-      if (end > longest) longest = end;
-      if (exit.kind === "flicker") {
+    kept.forEach(function (glyph) {
+      var batch = glyph._batch || 0;
+      var jitter = (Math.round(glyph._x + glyph._y) % 5) * 32;
+      var delay = batchStart[batch] + jitter;
+      var duration = batch === 1 || batch === 2 ? 680 : 560;
+      if (delay + duration > longest) longest = delay + duration;
+      if (batch === 2) {
         glyph._inner.animate([
           { opacity: 1 },
-          { opacity: 0.12, offset: 0.22 },
-          { opacity: 0.9, offset: 0.45 },
-          { opacity: 0.05, offset: 0.68 },
+          { opacity: 0.15, offset: 0.3 },
+          { opacity: 0.85, offset: 0.5 },
           { opacity: 0 }
-        ], { duration: exit.duration, delay: exit.delay, easing: "linear", fill: "forwards" });
-      } else if (exit.kind === "rise") {
+        ], { duration: duration, delay: delay, easing: "linear", fill: "forwards" });
+      } else if (batch === 1) {
         glyph.animate([
           { transform: "translate(" + glyph._x + "px, " + glyph._y + "px)", opacity: 1 },
-          { transform: "translate(" + glyph._x + "px, " + (glyph._y - 11) + "px)", opacity: 0 }
-        ], { duration: exit.duration, delay: exit.delay, easing: "cubic-bezier(.2,.7,.2,1)", fill: "forwards" });
+          { transform: "translate(" + glyph._x + "px, " + (glyph._y - 14) + "px)", opacity: 0 }
+        ], { duration: duration, delay: delay, easing: "cubic-bezier(.2,.7,.2,1)", fill: "forwards" });
       } else {
         glyph._inner.animate(
           [{ opacity: 1 }, { opacity: 0 }],
-          { duration: exit.duration, delay: exit.delay, easing: "ease", fill: "forwards" }
+          { duration: duration, delay: delay, easing: "ease", fill: "forwards" }
         );
       }
     });
 
-    await wait(Math.max(220, Math.min(longest - 180, 460)));
+    await wait(Math.max(480, longest - 520));
     if (cancelled) return;
     finish();
   }
@@ -376,5 +433,5 @@
   run().catch(function () { finish(); });
   setTimeout(function () {
     if (!root.classList.contains("intro-done")) finish();
-  }, 7000);
+  }, 9000);
 })();

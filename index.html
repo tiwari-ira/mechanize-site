@@ -18,8 +18,11 @@
   <script>
     (function () {
       try {
+        var outline = /(?:\?|&)v=outline(?:&|$)/.test(location.search);
+        var key = outline ? "mechanize-intro" : "mechanize-intro-filled";
+        document.documentElement.dataset.intro = outline ? "outline" : "filled";
         var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        var seen = sessionStorage.getItem("mechanize-intro") === "1";
+        var seen = sessionStorage.getItem(key) === "1";
         if (!reduce && !seen) document.documentElement.classList.add("has-intro");
       } catch (e) {}
     })();
@@ -98,7 +101,15 @@
     </footer>
   </div>
 
-  <script src="/intro.js"></script>
+  <script>
+    (function () {
+      var outline = document.documentElement.dataset.intro === "outline";
+      var s = document.createElement("script");
+      s.src = outline ? "/intro-outline.js" : "/intro.js";
+      s.async = false;
+      document.body.appendChild(s);
+    })();
+  </script>
   <script src="/site.js"></script>
 </body>
 </html>
