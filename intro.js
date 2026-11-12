@@ -3,7 +3,6 @@
   if (!root.classList.contains("has-intro")) return;
   if (root.dataset.intro === "outline") return;
 
-  var SHADE = " .:-~=+*#%@";
   var BUBBLE = {
     M: [
       "11111111",
@@ -192,28 +191,17 @@
     var sinS = Math.sin(ax);
     var cosT = Math.cos(ay);
     var sinT = Math.sin(ay);
-    var lx = 0.15;
-    var ly = -0.35;
-    var lz = 0.9;
-    var llen = Math.hypot(lx, ly, lz);
-    lx /= llen;
-    ly /= llen;
-    lz /= llen;
     var midX = window.innerWidth / 2;
     var midY = window.innerHeight / 2;
     for (var s = 0; s < samples.length; s++) {
       var p = samples[s];
-      var x1 = p.x * cosS - p.y * sinS;
       var y1 = p.x * sinS + p.y * cosS;
       var z1 = p.z;
-      var nx1 = p.nx * cosS - p.ny * sinS;
       var ny1 = p.nx * sinS + p.ny * cosS;
       var nz1 = p.nz;
-      var x2 = x1;
+      var x2 = p.x * cosS - p.y * sinS;
       var y2 = y1 * cosT - z1 * sinT;
       var z2 = y1 * sinT + z1 * cosT;
-      var nx2 = nx1;
-      var ny2 = ny1 * cosT - nz1 * sinT;
       var nz2 = ny1 * sinT + nz1 * cosT;
       if (nz2 <= 0.04) continue;
       var persp = 4 / (4 - z2 * 0.15);
@@ -225,10 +213,7 @@
       var idx = sy * cols + sx;
       if (z2 <= zbuf[idx]) continue;
       zbuf[idx] = z2;
-      var lum = nx2 * lx + ny2 * ly + nz2 * lz;
-      if (lum < 0) lum = 0;
-      var shade = Math.min(SHADE.length - 1, Math.floor(lum * (SHADE.length - 1) + 0.15));
-      chars[idx] = SHADE.charAt(shade);
+      chars[idx] = WORD.charAt((sx + sy * 3) % WORD.length);
     }
     var cells = null;
     if (capture) {
@@ -397,6 +382,9 @@
       glyph._inner.style.transform = "translate(-50%, -50%) scale(1)";
       return glyph;
     });
+    void stage.offsetWidth;
+    await wait(280);
+    if (cancelled) return;
 
     var targets = word.points.map(function (point) {
       return {
@@ -406,12 +394,13 @@
       };
     });
     matchTargets(glyphs, targets);
+    void stage.offsetWidth;
 
-    var ease = "cubic-bezier(.22,.8,.24,1)";
-    glyphs.forEach(function (glyph, index) {
+    var ease = "cubic-bezier(.2,.75,.2,1)";
+    glyphs.forEach(function (glyph) {
       if (glyph._keep) {
-        var delay = (index % 9) * 16;
-        glyph.style.transition = "transform 860ms " + ease + " " + delay + "ms";
+        var delay = Math.floor(Math.random() * 160);
+        glyph.style.transition = "transform 780ms " + ease + " " + delay + "ms";
         glyph.style.transform = "translate(" + glyph._tx + "px, " + glyph._ty + "px)";
         glyph._x = glyph._tx;
         glyph._y = glyph._ty;
@@ -419,13 +408,14 @@
         var dx = glyph._x - originX;
         var dy = glyph._y - originY;
         var len = Math.hypot(dx, dy) || 1;
-        glyph.style.transition = "transform 520ms ease, opacity 420ms ease";
+        var kick = 70 + Math.random() * 80;
+        glyph.style.transition = "transform 640ms ease, opacity 520ms ease";
         glyph.style.opacity = "0";
-        glyph.style.transform = "translate(" + (glyph._x + (dx / len) * 22) + "px, " + (glyph._y + (dy / len) * 22) + "px)";
+        glyph.style.transform = "translate(" + (glyph._x + (dx / len) * kick) + "px, " + (glyph._y + (dy / len) * kick) + "px)";
       }
     });
 
-    await wait(860 + 16 * 8 + 40);
+    await wait(780 + 160 + 40);
     if (cancelled) return;
     await wait(440);
     if (cancelled) return;
